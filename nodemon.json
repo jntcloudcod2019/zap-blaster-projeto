@@ -1,0 +1,6 @@
+{
+    "watch": ["zap.js", "numbers.json"],
+    "ignore": ["auth/*"],
+    "ext": "js json"
+  }
+  
