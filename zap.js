@@ -1,43 +1,39 @@
-/**
- * zap.js — disparo massivo Baileys com reconexão automática
- * Execução:   node zap.js         (produção)
- *             npx nodemon zap.js  (dev/hot-reload)
- */
 
-const makeWASocket = require('@whiskeysockets/baileys').default;
+const makeWASocket   = require('@whiskeysockets/baileys').default;
 const { useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
-const pLimit = require('p-limit');
-const fs = require('fs');
-const path = require('path');
+ 
+const pLimit = require('p-limit').default;  
+const fs             = require('fs');
+const path           = require('path');
 
 const AUTH_FOLDER   = 'auth';
 const CONTACTS_FILE = 'numbers.json';
 
-const MSG_DELAY_MS  = 4_000;  // intervalo entre mensagens (sequencial)
-const MAX_PARALLEL  = 1;      // 1 = sequencial; >1 = paralelo
-const RETRY_MIN_MS  = 5_000;  // back-off inicial
-const RETRY_MAX_MS  = 60_000; // back-off máximo
-
+const MSG_DELAY_MS  = 4_000;
+const MAX_PARALLEL  = 1;       
+const RETRY_MIN_MS  = 5_000;
+const RETRY_MAX_MS  = 60_000;
 const MESSAGE = `
 Olá, tudo bem? 😊
 
 Aqui é do setor de Tecnologia da Pregiato Management – Agência de Modelos. Estamos entrando em contato para dar andamento ao seu processo de agenciamento na nossa plataforma My Pregiato.
 
 Para liberar o seu acesso exclusivo, precisamos confirmar algumas informações cadastrais. Por gentileza, envie os dados abaixo:
-
-CPF
-RG
-E-mail
-Data de nascimento
-Telefone principal
-Telefone secundário (opcional)
-CEP
+Nome Completo,
+CPF,
+RG,
+E-mail,
+Data de nascimento,
+Telefone principal,
+Telefone secundário (opcional),
+CEP,
 Endereço completo (rua, número, bairro, cidade e UF)
 
 Assim que os dados forem enviados, você receberá no seu e-mail as credenciais de acesso à plataforma. Caso não localize na caixa de entrada, lembre-se de verificar a pasta de SPAM ou lixo eletrônico.
 
 Estamos à disposição para qualquer dúvida, e desejamos muito sucesso nessa nova jornada com a gente. 💼✨
-
+Contatos:
+Equipe Pregiato: (11) 97866-9411
 Equipe T.I – Pregiato Management
 `.trim();
 
@@ -58,7 +54,7 @@ async function createClient(instanceId = 'default', attempt = 1) {
 
   sock.ev.on('connection.update', async ({ connection, lastDisconnect }) => {
     if (connection === 'open') {
-      console.log(`✅ Sessão ${instanceId} pronta!`);
+      console.log(` Sessão ${instanceId} pronta!`);
       await sendBlast(sock);
     }
 
@@ -68,17 +64,17 @@ async function createClient(instanceId = 'default', attempt = 1) {
 
       if (!loggedOut) {
         const nextDelay = Math.min(RETRY_MIN_MS * 2 ** (attempt - 1), RETRY_MAX_MS);
-        console.warn(`⚠️  Conexão perdida (código ${statusCode || 'desconhecido'}).`
+        console.warn(` Conexão perdida (código ${statusCode || 'desconhecido'}).`
           + ` Tentando reconectar em ${nextDelay / 1000}s…`);
         setTimeout(() => createClient(instanceId, attempt + 1), nextDelay);
       } else {
-        console.error('🛑 Sessão encerrada. Escaneie o QR Code novamente.');
+        console.error(' Sessão encerrada. Escaneie o QR Code novamente.');
       }
     }
   });
 
   sock.ev.on('connection.error', (err) =>
-    console.error('❌ Erro de conexão:', err)
+    console.error('Erro de conexão:', err)
   );
 }
 
@@ -96,18 +92,15 @@ async function sendBlast(sock) {
   try {
     lista = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
   } catch (e) {
-    console.error(`⚠️  ${CONTACTS_FILE} inválido: ${e.message}`);
+    console.error(` ${CONTACTS_FILE} inválido: ${e.message}`);
     return;
   }
 
-  const limit = pLimit(MAX_PARALLEL);
-
   for (const number of lista) {
-    await limit(() => sendOne(sock, number));
-    if (MAX_PARALLEL === 1) await delay(MSG_DELAY_MS);
+    await sendOne(sock, number);
+    await delay(MSG_DELAY_MS);
   }
-
-  console.log('🎉 Disparo concluído. Aguardando respostas…');
+  console.log(' Disparo concluído. Aguardando respostas…');
 }
 
 // --------------------------------------------------------------------
@@ -117,13 +110,12 @@ async function sendOne(sock, number) {
   const jid = `${number}@s.whatsapp.net`;
   try {
     await sock.sendMessage(jid, { text: MESSAGE });
-    console.log(`✔️  Mensagem enviada para ${number}`);
+    console.log(`  Mensagem enviada para ${number}`);
   } catch (err) {
-    console.error(`❌  Falhou em ${number}:`, err.message);
+    console.error(`  Falhou em ${number}:`, err.message);
   }
 }
 
-// utilitário para delay
 function delay(ms) {
   return new Promise((res) => setTimeout(res, ms));
 }
