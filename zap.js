@@ -1,126 +1,84 @@
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const amqp = require('amqplib');
+const fs = require('fs');
+require('dotenv').config();
 
-const makeWASocket   = require('@whiskeysockets/baileys').default;
-const { useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
- 
-const pLimit = require('p-limit').default;  
-const fs             = require('fs');
-const path           = require('path');
+const instanceId = process.env.INSTANCE_ID || 'zap-instance';
+const authFolder = `./auth/${instanceId}`;
+fs.mkdirSync(authFolder, { recursive: true });
 
-const AUTH_FOLDER   = 'auth';
-const CONTACTS_FILE = 'numbers.json';
 
-const MSG_DELAY_MS  = 4_000;
-const MAX_PARALLEL  = 1;       
-const RETRY_MIN_MS  = 5_000;
-const RETRY_MAX_MS  = 60_000;
-const MESSAGE = `
-Olá, tudo bem? 😊
+const rabbitConfig = {
+  protocol: 'amqp',
+  hostname: 'mouse.rmq5.cloudamqp.com',
+  port: 5672,
+  username: 'ewxcrhtv',
+  password: 'DNcdH0NEeP4Fsgo2_w-vd47CqjelFk_S',
+  vhost: 'ewxcrhtv'
+};
 
-Aqui é do setor de Tecnologia da Pregiato Management – Agência de Modelos. Estamos entrando em contato para dar andamento ao seu processo de agenciamento na nossa plataforma My Pregiato.
-
-Para liberar o seu acesso exclusivo, precisamos confirmar algumas informações cadastrais. Por gentileza, envie os dados abaixo:
-Nome Completo,
-CPF,
-RG,
-E-mail,
-Data de nascimento,
-Telefone principal,
-Telefone secundário (opcional),
-CEP,
-Endereço completo (rua, número, bairro, cidade e UF)
-
-Assim que os dados forem enviados, você receberá no seu e-mail as credenciais de acesso à plataforma. Caso não localize na caixa de entrada, lembre-se de verificar a pasta de SPAM ou lixo eletrônico.
-
-Estamos à disposição para qualquer dúvida, e desejamos muito sucesso nessa nova jornada com a gente. 💼✨
-Contatos:
-Equipe Pregiato: (11) 97866-9411
-Equipe T.I – Pregiato Management
-`.trim();
-
-// --------------------------------------------------------------------
-// 1. Cria cliente Baileys com reconexão
-// --------------------------------------------------------------------
-async function createClient(instanceId = 'default', attempt = 1) {
-  const { state, saveCreds } = await useMultiFileAuthState(AUTH_FOLDER);
+async function connectToWhatsApp() {
+  const { state, saveCreds } = await useMultiFileAuthState(authFolder);
 
   const sock = makeWASocket({
     auth: state,
     printQRInTerminal: true,
-    browser: ['ZapBlast', 'Windows', '110'],
-    syncFullHistory: false,
   });
 
   sock.ev.on('creds.update', saveCreds);
 
-  sock.ev.on('connection.update', async ({ connection, lastDisconnect }) => {
-    if (connection === 'open') {
-      console.log(` Sessão ${instanceId} pronta!`);
-      await sendBlast(sock);
-    }
+  sock.ev.on('connection.update', async (update) => {
+    const { connection, lastDisconnect } = update;
 
     if (connection === 'close') {
-      const statusCode = lastDisconnect?.error?.output?.statusCode;
-      const loggedOut  = statusCode === DisconnectReason.loggedOut;
-
-      if (!loggedOut) {
-        const nextDelay = Math.min(RETRY_MIN_MS * 2 ** (attempt - 1), RETRY_MAX_MS);
-        console.warn(` Conexão perdida (código ${statusCode || 'desconhecido'}).`
-          + ` Tentando reconectar em ${nextDelay / 1000}s…`);
-        setTimeout(() => createClient(instanceId, attempt + 1), nextDelay);
-      } else {
-        console.error(' Sessão encerrada. Escaneie o QR Code novamente.');
-      }
+      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+      console.log('🔌 Conexão encerrada. Reconnect?', shouldReconnect);
+      if (shouldReconnect) connectToWhatsApp();
+    } else if (connection === 'open') {
+      console.log(` Sessão ${instanceId} conectada!`);
+      await startQueueConsumer(sock);
     }
   });
-
-  sock.ev.on('connection.error', (err) =>
-    console.error('Erro de conexão:', err)
-  );
 }
 
-// --------------------------------------------------------------------
-// 2. Disparo em lote
-// --------------------------------------------------------------------
-async function sendBlast(sock) {
-  const filePath = path.resolve(__dirname, CONTACTS_FILE);
-  if (!fs.existsSync(filePath)) {
-    console.error(`Arquivo ${CONTACTS_FILE} não encontrado.`);
-    return;
-  }
-
-  let lista;
-  try {
-    lista = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-  } catch (e) {
-    console.error(` ${CONTACTS_FILE} inválido: ${e.message}`);
-    return;
-  }
-
-  for (const number of lista) {
-    await sendOne(sock, number);
-    await delay(MSG_DELAY_MS);
-  }
-  console.log(' Disparo concluído. Aguardando respostas…');
-}
-
-// --------------------------------------------------------------------
-// 3. Envia mensagem para um número
-// --------------------------------------------------------------------
-async function sendOne(sock, number) {
+async function sendOne(sock, number, messageText) {
   const jid = `${number}@s.whatsapp.net`;
   try {
-    await sock.sendMessage(jid, { text: MESSAGE });
-    console.log(`  Mensagem enviada para ${number}`);
+    await sock.sendMessage(jid, { text: messageText });
+    console.log(` Mensagem enviada para ${number}`);
   } catch (err) {
-    console.error(`  Falhou em ${number}:`, err.message);
+    console.error(` Erro ao enviar para ${number}:`, err.message);
   }
 }
 
-function delay(ms) {
-  return new Promise((res) => setTimeout(res, ms));
+async function startQueueConsumer(sock) {
+  try {
+    const connection = await amqp.connect(rabbitConfig);
+    const channel = await connection.createChannel();
+
+    const queue = 'sqs-send-Credentials';
+    await channel.assertQueue(queue, { durable: true });
+
+    console.log(` Esperando mensagens na fila: ${queue}...`);
+
+    channel.consume(queue, async (msg) => {
+      if (msg !== null) {
+        try {
+          const payload = JSON.parse(msg.content.toString());
+          console.log(' Mensagem recebida:', payload);
+
+          await sendOne(sock, payload.phone, payload.message);
+          channel.ack(msg);
+        } catch (error) {
+          console.error(' Erro ao processar mensagem:', error.message);
+          channel.nack(msg, false, false); 
+        }
+      }
+    });
+  } catch (err) {
+    console.error(' Erro ao conectar ao RabbitMQ:', err.message);
+  }
 }
 
-// --------------------------------------------------------------------
-// bootstrap
-// --------------------------------------------------------------------
-createClient().catch((err) => console.error('Falha fatal:', err));
+
+connectToWhatsApp();
