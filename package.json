@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "zap.js",
   "scripts": {
-    "start": "nodemon blast.js"
+    "start": "node zap.js"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.16",
