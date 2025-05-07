@@ -4,7 +4,7 @@ const fs = require('fs');
 require('dotenv').config();
 
 const instanceId = process.env.INSTANCE_ID || 'zap-instance';
-const authFolder = `./auth/${instanceId}`;
+const authFolder = `/app/auth/${instanceId}`; // ← Volume persistente no Railway
 fs.mkdirSync(authFolder, { recursive: true });
 
 const rabbitConfig = {
@@ -24,6 +24,7 @@ async function connectToWhatsApp() {
   const sock = makeWASocket({
     auth: state,
     printQRInTerminal: true,
+    browser: ['Chrome', 'Windows', '10.0'] // ← Força ambiente "amigável"
   });
 
   sock.ev.on('creds.update', async () => {
