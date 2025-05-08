@@ -24,9 +24,16 @@ const client = new Client({
   }
 });
 
-client.on('qr', (qr) => {
-  console.log('📱 ESCANEIE O QR CODE ABAIXO:');
+const QRCode = require('qrcode'); // novo pacote
+
+client.on('qr', async (qr) => {
+  console.log('📱 ESCANEIE O QR CODE NO TERMINAL:\n');
   qrcode.generate(qr, { small: true });
+
+  const url = await QRCode.toDataURL(qr);
+  console.log('\n🔗 QR como imagem base64:\n');
+  console.log(url);
+  console.log('\n👉 Acesse https://goqr.me e cole o conteúdo acima para escanear.');
 });
 
 client.on('ready', async () => {
