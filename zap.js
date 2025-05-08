@@ -1,11 +1,11 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys'); 
+// zap.js - Versão final usando whatsapp-web.js
+const { Client, LocalAuth } = require('whatsapp-web.js');
 const amqp = require('amqplib');
-const fs = require('fs');
+const qrcode = require('qrcode-terminal');
 require('dotenv').config();
 
-const instanceId = process.env.INSTANCE_ID || 'zap-instance';
-const authFolder = `/app/auth/${instanceId}`; // ← Volume persistente no Railway
-fs.mkdirSync(authFolder, { recursive: true });
+const instanceId = process.env.INSTANCE_ID || 'zap-prod';
+const sessionPath = `/app/session/${instanceId}`;
 
 const rabbitConfig = {
   protocol: 'amqp',
@@ -16,68 +16,50 @@ const rabbitConfig = {
   vhost: 'ewxcrhtv'
 };
 
-async function connectToWhatsApp() {
-  console.log('🚀 Iniciando conexão com o WhatsApp...');
+const client = new Client({
+  authStrategy: new LocalAuth({ dataPath: sessionPath }),
+  puppeteer: {
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  }
+});
 
-  const { state, saveCreds } = await useMultiFileAuthState(authFolder);
+client.on('qr', (qr) => {
+  console.log('📱 ESCANEIE O QR CODE ABAIXO:');
+  qrcode.generate(qr, { small: true });
+});
 
-  const sock = makeWASocket({
-    auth: state,
-    printQRInTerminal: true,
-    browser: ['Chrome', 'Windows', '10.0'] // ← Força ambiente "amigável"
-  });
+client.on('ready', async () => {
+  console.log('✅ Cliente WhatsApp conectado!');
+  await startQueueConsumer(client);
+});
 
-  sock.ev.on('creds.update', async () => {
-    console.log('💾 Credenciais atualizadas e salvas.');
-    await saveCreds();
-  });
+client.on('auth_failure', () => {
+  console.error('❌ Falha de autenticação. Escaneie o QR novamente.');
+});
 
-  sock.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect, qr } = update;
+client.on('disconnected', (reason) => {
+  console.log('🔌 Cliente desconectado:', reason);
+});
 
-    if (qr) {
-      console.log('📱 ESCANEIE O QR CODE NO TERMINAL:');
-      console.log('\n========================================\n');
-      console.log(qr);
-      console.log('\n========================================\n');
-    }
+async function sendOne(client, number, messageText) {
+  const ownNumber = client.info?.wid?.user;
 
-    if (connection === 'close') {
-      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-      console.log('🔌 Conexão encerrada. Reconnect?', shouldReconnect);
-      if (shouldReconnect) connectToWhatsApp();
-    } else if (connection === 'open') {
-      const userId = sock.user?.id?.split('@')[0];
-      console.log(`📱 Número conectado no bot: ${userId}`);
-      console.log(`✅ Sessão ${instanceId} conectada!`);
-      await startQueueConsumer(sock);
-    }
-  });
-
-  sock.ev.on('connection.error', (err) => {
-    console.error('❌ Erro de conexão com WhatsApp:', err);
-  });
-}
-
-async function sendOne(sock, number, messageText) {
-  const jid = `${number}@s.whatsapp.net`;
-  const ownNumber = sock.user?.id?.split('@')[0];
-
-  if (number === ownNumber || number === `+${ownNumber}`) {
+  if (!ownNumber || number === ownNumber || number === `+${ownNumber}`) {
     console.log(`⚠️ Ignorando envio para o próprio número (${number}).`);
     return;
   }
 
   try {
     console.log(`📤 Enviando mensagem para ${number}...`);
-    await sock.sendMessage(jid, { text: messageText });
+    await client.sendMessage(`${number}@c.us`, messageText);
     console.log(`✅ Mensagem enviada para ${number}`);
   } catch (err) {
     console.error(`❌ Erro ao enviar para ${number}:`, err.message);
   }
 }
 
-async function startQueueConsumer(sock) {
+async function startQueueConsumer(client) {
   try {
     console.log('🔌 Conectando ao RabbitMQ...');
 
@@ -95,11 +77,11 @@ async function startQueueConsumer(sock) {
           const payload = JSON.parse(msg.content.toString());
           console.log('📦 Mensagem recebida da fila:', payload);
 
-          await sendOne(sock, payload.phone, payload.message);
+          await sendOne(client, payload.phone, payload.message);
           channel.ack(msg);
         } catch (error) {
           console.error('❌ Erro ao processar mensagem:', error.message);
-          channel.nack(msg, false, false); // rejeita e descarta
+          channel.nack(msg, false, false);
         }
       }
     });
@@ -108,5 +90,4 @@ async function startQueueConsumer(sock) {
   }
 }
 
-// Inicializa o app
-connectToWhatsApp();
+client.initialize();
