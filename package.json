@@ -3,18 +3,28 @@
   "version": "1.0.0",
   "main": "zap.js",
   "scripts": {
-    "start": "node zap.js"
+    "start": "node zap.js",
+    "dev": "nodemon zap.js",
+    "test": "node test-connection.js",
+    "test-send": "node test-send.js",
+    "status": "node status.js",
+    "clear-session": "node clear-session.js",
+    "test-fix": "node test-fix.js",
+    "clear-cache": "node clear-cache.js"
   },
   "dependencies": {
     "amqplib": "^0.10.8",
     "dotenv": "^16.5.0",
     "p-limit": "^4.0.0",
-    "puppeteer": "^24.8.1",
+    "puppeteer": "^22.8.2",
     "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.27.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
