@@ -20,33 +20,33 @@ function checkExistingSession() {
 
 // Função para mostrar informações da sessão
 function showSessionInfo() {
-  console.log('📊 STATUS DO ZAP BLASTER');
+  console.log(' STATUS DO ZAP BLASTER');
   console.log('=' .repeat(50));
   
-  console.log(`🆔 Instância: ${instanceId}`);
-  console.log(`📁 Sessão: ${sessionPath}`);
+  console.log(` Instância: ${instanceId}`);
+  console.log(` Sessão: ${sessionPath}`);
   
   if (checkExistingSession()) {
-    console.log('✅ Sessão encontrada');
+    console.log(' Sessão encontrada');
     
     // Tentar ler informações da sessão
     try {
       const sessionDir = path.join(sessionPath, 'session-zap-prod');
       const files = fs.readdirSync(sessionDir);
-      console.log(`📄 Arquivos de sessão: ${files.length}`);
+      console.log(` Arquivos de sessão: ${files.length}`);
       
       if (files.length > 0) {
-        console.log('📋 Arquivos:');
+        console.log('Arquivos:');
         files.forEach(file => {
           const stats = fs.statSync(path.join(sessionDir, file));
           console.log(`   - ${file} (${stats.size} bytes)`);
         });
       }
     } catch (error) {
-      console.log('⚠️ Erro ao ler arquivos de sessão:', error.message);
+      console.log(' Erro ao ler arquivos de sessão:', error.message);
     }
   } else {
-    console.log('❌ Nenhuma sessão encontrada');
+    console.log('Nenhuma sessão encontrada');
   }
   
   console.log('=' .repeat(50));
@@ -54,7 +54,7 @@ function showSessionInfo() {
 
 // Função para testar conexão rápida
 async function testConnection() {
-  console.log('\n🧪 Testando conexão...');
+  console.log('\n Testando conexão...');
   
   const client = new Client({
     authStrategy: new LocalAuth({ 
@@ -81,10 +81,10 @@ async function testConnection() {
   client.on('ready', () => {
     clearTimeout(connectionTimeout);
     isConnected = true;
-    console.log('✅ CONECTADO!');
-    console.log(`📞 Número: ${client.info?.wid?.user || 'N/A'}`);
-    console.log(`📱 Nome: ${client.info?.pushname || 'N/A'}`);
-    console.log(`🌍 Plataforma: ${client.info?.platform || 'N/A'}`);
+    console.log(' CONECTADO!');
+    console.log(` Número: ${client.info?.wid?.user || 'N/A'}`);
+    console.log(` Nome: ${client.info?.pushname || 'N/A'}`);
+    console.log(` Plataforma: ${client.info?.platform || 'N/A'}`);
     
     client.destroy();
     process.exit(0);
@@ -92,27 +92,27 @@ async function testConnection() {
 
   client.on('auth_failure', (msg) => {
     clearTimeout(connectionTimeout);
-    console.log('❌ Falha de autenticação');
-    console.log(`📝 Detalhes: ${msg}`);
+    console.log(' Falha de autenticação');
+    console.log(` Detalhes: ${msg}`);
     process.exit(1);
   });
 
   client.on('disconnected', (reason) => {
     clearTimeout(connectionTimeout);
-    console.log('❌ Desconectado');
+    console.log(' Desconectado');
     console.log(`📝 Motivo: ${reason}`);
     process.exit(1);
   });
 
   client.on('qr', (qr) => {
     clearTimeout(connectionTimeout);
-    console.log('📱 QR Code necessário - não há sessão válida');
+    console.log(' QR Code necessário - não há sessão válida');
     process.exit(1);
   });
 
   // Timeout de 30 segundos
   connectionTimeout = setTimeout(() => {
-    console.log('⏰ Timeout - não foi possível conectar em 30 segundos');
+    console.log(' Timeout - não foi possível conectar em 30 segundos');
     process.exit(1);
   }, 30000);
 
