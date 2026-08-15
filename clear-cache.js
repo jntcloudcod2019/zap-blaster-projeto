@@ -11,7 +11,7 @@ const cachePath = path.join(process.cwd(), '.wwebjs_cache');
 const authPath = path.join(process.cwd(), 'auth');
 
 function clearCache() {
-  console.log('🧹 LIMPANDO CACHE DO WHATSAPP-WEB.JS');
+  console.log('LIMPANDO CACHE DO WHATSAPP-WEB.JS');
   console.log('=' .repeat(50));
   
   const pathsToClean = [
@@ -21,15 +21,15 @@ function clearCache() {
   ];
   
   pathsToClean.forEach(({ path: dirPath, name }) => {
-    console.log(`\n📁 ${name}: ${dirPath}`);
+    console.log(`\n[${name}]: ${dirPath}`);
     
     if (fs.existsSync(dirPath)) {
       try {
         const files = fs.readdirSync(dirPath);
-        console.log(`📄 Arquivos encontrados: ${files.length}`);
+        console.log(`Arquivos encontrados: ${files.length}`);
         
         if (files.length > 0) {
-          console.log('📋 Arquivos:');
+          console.log('Arquivos:');
           files.forEach(file => {
             const filePath = path.join(dirPath, file);
             const stats = fs.statSync(filePath);
@@ -45,32 +45,32 @@ function clearCache() {
               } else {
                 fs.unlinkSync(filePath);
               }
-              console.log(`🗑️ Removido: ${file}`);
+              console.log(`[REMOVIDO] ${file}`);
             } catch (error) {
-              console.log(`❌ Erro ao remover ${file}: ${error.message}`);
+              console.log(`[ERRO] Erro ao remover ${file}: ${error.message}`);
             }
           });
           
-          console.log(`✅ ${name} limpo com sucesso!`);
+          console.log(`[OK] ${name} limpo com sucesso!`);
         } else {
-          console.log(`📂 ${name} já está vazio`);
+          console.log(`[INFO] ${name} já está vazio`);
         }
       } catch (error) {
-        console.error(`❌ Erro ao limpar ${name}:`, error.message);
+        console.error(`[ERRO] Erro ao limpar ${name}:`, error.message);
       }
     } else {
-      console.log(`📂 ${name} não encontrado`);
+      console.log(`[INFO] ${name} não encontrado`);
     }
   });
   
   console.log('\n' + '=' .repeat(50));
-  console.log('✅ Limpeza concluída!');
-  console.log('🔄 Reinicie o bot para escanear um novo QR Code.');
+  console.log('[OK] Limpeza concluída!');
+  console.log('[INFO] Reinicie o bot para escanear um novo QR Code.');
 }
 
 // Função para mostrar informações do cache
 function showCacheInfo() {
-  console.log('📊 INFORMAÇÕES DO CACHE');
+  console.log('INFORMACOES DO CACHE');
   console.log('=' .repeat(50));
   
   const pathsToCheck = [
@@ -80,32 +80,32 @@ function showCacheInfo() {
   ];
   
   pathsToCheck.forEach(({ path: dirPath, name }) => {
-    console.log(`\n📁 ${name}: ${dirPath}`);
+    console.log(`\n[${name}]: ${dirPath}`);
     
     if (fs.existsSync(dirPath)) {
       try {
         const files = fs.readdirSync(dirPath);
-        console.log(`📄 Arquivos: ${files.length}`);
+        console.log(`Arquivos: ${files.length}`);
         
         if (files.length > 0) {
           files.forEach(file => {
             const filePath = path.join(dirPath, file);
             const stats = fs.statSync(filePath);
             const isDir = stats.isDirectory();
-            console.log(`   ${isDir ? '📁' : '📄'} ${file} (${stats.size} bytes)`);
+            console.log(`   ${isDir ? '[DIR]' : '[FILE]'} ${file} (${stats.size} bytes)`);
           });
         }
       } catch (error) {
-        console.log(`❌ Erro ao ler ${name}: ${error.message}`);
+        console.log(`[ERRO] Erro ao ler ${name}: ${error.message}`);
       }
     } else {
-      console.log(`❌ ${name} não encontrado`);
+      console.log(`[ERRO] ${name} não encontrado`);
     }
   });
 }
 
 // Executar
-console.log('🚀 Iniciando limpeza de cache...\n');
+console.log('Iniciando limpeza de cache...\n');
 
 // Mostrar informações antes de limpar
 showCacheInfo();
@@ -113,4 +113,4 @@ showCacheInfo();
 // Aguardar um pouco
 setTimeout(() => {
   clearCache();
-}, 2000); 
+}, 2000);
