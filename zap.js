@@ -19,13 +19,13 @@ const sessionDir = path.dirname(sessionPath);
 if (!fs.existsSync(sessionDir)) {
   try {
     fs.mkdirSync(sessionDir, { recursive: true });
-    console.log(`📁 Diretório de sessão criado: ${sessionDir}`);
+    console.log(` Diretório de sessão criado: ${sessionDir}`);
   } catch (error) {
-    console.error(`❌ Erro ao criar diretório de sessão: ${error.message}`);
+    console.error(` Erro ao criar diretório de sessão: ${error.message}`);
     // Fallback para diretório local
     const localSessionDir = path.join(process.cwd(), 'session', instanceId);
     fs.mkdirSync(path.dirname(localSessionDir), { recursive: true });
-    console.log(`📁 Usando diretório local: ${localSessionDir}`);
+    console.log(` Usando diretório local: ${localSessionDir}`);
   }
 }
 
@@ -74,18 +74,18 @@ function checkExistingSession() {
 // Função para validar conexão completamente
 async function validateConnection() {
   try {
-    console.log('🔍 Validando conexão...');
+    console.log(' Validando conexão...');
     
     // Verificar se o cliente está realmente conectado
     if (!client.info || !client.info.wid) {
-      console.log('❌ Cliente não tem informações válidas');
+      console.log(' Cliente não tem informações válidas');
       return false;
     }
 
     // Verificar se o número está disponível
     const number = client.info.wid.user;
     if (!number) {
-      console.log('❌ Número não disponível');
+      console.log(' Número não disponível');
       return false;
     }
 
@@ -94,7 +94,7 @@ async function validateConnection() {
       // Testar obtenção de chats
       const chats = await client.getChats();
       if (!chats || chats.length === 0) {
-        console.log('⚠️ Nenhum chat encontrado - pode indicar problema de conexão');
+        console.log(' Nenhum chat encontrado - pode indicar problema de conexão');
       }
       
       // Testar uma operação de envio simples (sem enviar)
@@ -104,21 +104,21 @@ async function validateConnection() {
           // Verificar se conseguimos acessar propriedades do chat
           const chatId = testChat.id;
           if (!chatId) {
-            console.log('⚠️ Chat sem ID válido');
+            console.log(' Chat sem ID válido');
           }
         }
       } catch (testError) {
-        console.log('⚠️ Erro ao testar operações de chat:', testError.message);
+        console.log(' Erro ao testar operações de chat:', testError.message);
       }
       
-      console.log('✅ Conexão validada com sucesso!');
+      console.log(' Conexão validada com sucesso!');
       return true;
     } catch (error) {
-      console.log('❌ Erro ao validar conexão:', error.message);
+      console.log(' Erro ao validar conexão:', error.message);
       return false;
     }
   } catch (error) {
-    console.log('❌ Erro durante validação:', error.message);
+    console.log(' Erro durante validação:', error.message);
     return false;
   }
 }
@@ -127,41 +127,41 @@ async function validateConnection() {
 async function processMessageQueue() {
   if (messageQueue.length === 0) return;
   
-  console.log(`📦 Processando ${messageQueue.length} mensagens pendentes...`);
+  console.log(` Processando ${messageQueue.length} mensagens pendentes...`);
   
   for (const queuedMessage of messageQueue) {
     try {
       const result = await sendOne(client, queuedMessage.phone, queuedMessage.messageData);
       
       if (result.success) {
-        console.log(`✅ Mensagem pendente enviada para ${queuedMessage.phone}`);
+        console.log(` Mensagem pendente enviada para ${queuedMessage.phone}`);
       } else {
-        console.log(`❌ Falha ao enviar mensagem pendente para ${queuedMessage.phone}: ${result.reason}`);
+        console.log(` Falha ao enviar mensagem pendente para ${queuedMessage.phone}: ${result.reason}`);
       }
     } catch (error) {
-      console.error(`❌ Erro ao processar mensagem pendente: ${error.message}`);
+      console.error(` Erro ao processar mensagem pendente: ${error.message}`);
     }
   }
   
   messageQueue = [];
-  console.log('📦 Fila de mensagens processada');
+  console.log(' Fila de mensagens processada');
 }
 
 // Função para mostrar status da conexão
 function showConnectionStatus() {
   if (isConnected && isFullyValidated && connectedNumber) {
-    console.log(`\n📱 STATUS: CONECTADO E VALIDADO`);
-    console.log(`📞 Número conectado: ${connectedNumber}`);
-    console.log(`🆔 Instância: ${instanceId}`);
-    console.log(`⏰ Conectado desde: ${new Date().toLocaleString('pt-BR')}`);
-    console.log(`✅ Pronto para receber mensagens da fila\n`);
+    console.log(`\n STATUS: CONECTADO E VALIDADO`);
+    console.log(` Número conectado: ${connectedNumber}`);
+    console.log(` Instância: ${instanceId}`);
+    console.log(` Conectado desde: ${new Date().toLocaleString('pt-BR')}`);
+    console.log(` Pronto para receber mensagens da fila\n`);
   } else if (isConnected && !isFullyValidated) {
-    console.log(`\n📱 STATUS: CONECTADO - VALIDANDO`);
-    console.log(`📞 Número conectado: ${connectedNumber || 'N/A'}`);
-    console.log(`⏳ Aguardando validação completa...\n`);
+    console.log(`\n STATUS: CONECTADO - VALIDANDO`);
+    console.log(` Número conectado: ${connectedNumber || 'N/A'}`);
+    console.log(` Aguardando validação completa...\n`);
   } else {
-    console.log(`\n📱 STATUS: DESCONECTADO`);
-    console.log(`❌ Aguardando conexão do WhatsApp\n`);
+    console.log(`\n STATUS: DESCONECTADO`);
+    console.log(` Aguardando conexão do WhatsApp\n`);
   }
 }
 
@@ -228,33 +228,33 @@ function processMessageTemplate(template, data) {
 client.on('qr', async (qr) => {
   // Só gerar QR code se não estiver conectado
   if (isConnected) {
-    console.log('⚠️ QR Code ignorado - já existe uma sessão conectada');
+    console.log(' QR Code ignorado - já existe uma sessão conectada');
     return;
   }
 
   clearQRCodeTimer();
   
-  console.log('📱 ESCANEIE O QR CODE NO TERMINAL:');
-  console.log('⏰ QR Code válido por 3 minutos\n');
+  console.log(' ESCANEIE O QR CODE NO TERMINAL:');
+  console.log(' QR Code válido por 3 minutos\n');
   
   qrcode.generate(qr, { small: true });
 
   try {
   const url = await QRCode.toDataURL(qr);
-  console.log('\n🔗 QR como imagem base64:\n');
+  console.log('\n QR como imagem base64:\n');
   console.log(url);
-  console.log('\n👉 Acesse https://goqr.me e cole o conteúdo acima para escanear.');
+  console.log('\n Acesse https://goqr.me e cole o conteúdo acima para escanear.');
     
     // Timer para expirar o QR Code
     qrCodeStartTime = Date.now();
     qrCodeTimer = setTimeout(() => {
       if (!isConnected) {
-        console.log('\n⏰ QR Code expirado! Reinicie o bot para gerar um novo.');
+        console.log('\n QR Code expirado! Reinicie o bot para gerar um novo.');
       }
     }, QR_CODE_DURATION);
     
   } catch (error) {
-    console.error('❌ Erro ao gerar QR code:', error.message);
+    console.error(' Erro ao gerar QR code:', error.message);
   }
 });
 
@@ -264,11 +264,11 @@ client.on('ready', async () => {
   connectedNumber = client.info?.wid?.user || 'N/A';
   isFullyValidated = false;
   
-  console.log('✅ Cliente WhatsApp conectado!');
+  console.log('Cliente WhatsApp conectado!');
   showConnectionStatus();
   
   // Aguardar um tempo antes de validar para evitar problemas de sincronização
-  console.log('⏳ Aguardando estabilização da conexão...');
+  console.log(' Aguardando estabilização da conexão...');
   
   validationTimer = setTimeout(async () => {
     const isValid = await validateConnection();
@@ -283,7 +283,7 @@ client.on('ready', async () => {
       // Iniciar consumidor da fila
   await startQueueConsumer(client);
     } else {
-      console.log('❌ Falha na validação - tentando novamente em 30 segundos...');
+      console.log(' Falha na validação - tentando novamente em 30 segundos...');
       isConnected = false;
       connectedNumber = null;
       showConnectionStatus();
@@ -297,8 +297,8 @@ client.on('auth_failure', (msg) => {
   isConnected = false;
   isFullyValidated = false;
   connectedNumber = null;
-  console.error('❌ Falha de autenticação:', msg);
-  console.log('🔄 Tente escanear o QR code novamente.');
+  console.error(' Falha de autenticação:', msg);
+  console.log(' Tente escanear o QR code novamente.');
   showConnectionStatus();
 });
 
@@ -308,20 +308,20 @@ client.on('disconnected', (reason) => {
   isConnected = false;
   isFullyValidated = false;
   connectedNumber = null;
-  console.log('🔌 Cliente desconectado:', reason);
-  console.log('🔄 Tentando reconectar...');
+  console.log(' Cliente desconectado:', reason);
+  console.log(' Tentando reconectar...');
   showConnectionStatus();
 });
 
 client.on('loading_screen', (percent, message) => {
-  console.log(`⏳ Carregando: ${percent}% - ${message}`);
+  console.log(` Carregando: ${percent}% - ${message}`);
 });
 
 // Função melhorada para envio de mensagens com templates
 async function sendOne(client, number, messageData) {
   // Verificar se está completamente validado
   if (!isFullyValidated) {
-    console.log(`⏳ Mensagem para ${number} adicionada à fila - aguardando validação`);
+    console.log(` Mensagem para ${number} adicionada à fila - aguardando validação`);
     messageQueue.push({ phone: number, messageData });
     return { success: false, reason: 'waiting_validation' };
   }
@@ -329,20 +329,20 @@ async function sendOne(client, number, messageData) {
   const ownNumber = client.info?.wid?.user;
 
   if (!ownNumber || number === ownNumber || number === `+${ownNumber}`) {
-    console.log(`⚠️ Ignorando envio para o próprio número (${number}).`);
+    console.log(` Ignorando envio para o próprio número (${number}).`);
     return { success: false, reason: 'own_number' };
   }
 
   // Validação do número
   const cleanNumber = number.replace(/\D/g, '');
   if (cleanNumber.length < 10) {
-    console.log(`❌ Número inválido: ${number}`);
+    console.log(` Número inválido: ${number}`);
     return { success: false, reason: 'invalid_number' };
   }
 
   try {
-    console.log(`📤 Enviando mensagem para ${number}...`);
-    console.log(`📞 Remetente: ${connectedNumber || 'N/A'}`);
+    console.log(` Enviando mensagem para ${number}...`);
+    console.log(` Remetente: ${connectedNumber || 'N/A'}`);
     
     const chatId = `${cleanNumber}@c.us`;
     
@@ -351,11 +351,11 @@ async function sendOne(client, number, messageData) {
     try {
       chat = await client.getChatById(chatId);
       if (!chat) {
-        console.log(`❌ Chat não encontrado para ${number}`);
+        console.log(` Chat não encontrado para ${number}`);
         return { success: false, reason: 'chat_not_found' };
       }
     } catch (chatError) {
-      console.log(`⚠️ Erro ao verificar chat para ${number}: ${chatError.message}`);
+      console.log(` Erro ao verificar chat para ${number}: ${chatError.message}`);
       // Tentar enviar mesmo assim
     }
 
@@ -372,13 +372,13 @@ async function sendOne(client, number, messageData) {
       // Mensagem com dados adicionais
       finalMessage = processMessageTemplate(messageData.message, messageData);
     } else {
-      console.log(`❌ Formato de mensagem inválido para ${number}`);
+      console.log(` Formato de mensagem inválido para ${number}`);
       return { success: false, reason: 'invalid_message_format' };
     }
 
     // Validar se a mensagem não está vazia
     if (!finalMessage || finalMessage.trim() === '') {
-      console.log(`❌ Mensagem vazia para ${number}`);
+      console.log(` Mensagem vazia para ${number}`);
       return { success: false, reason: 'empty_message' };
     }
 
@@ -392,18 +392,18 @@ async function sendOne(client, number, messageData) {
         const message = await client.sendMessage(chatId, finalMessage);
         
         if (message && message.id) {
-          console.log(`✅ Mensagem enviada para ${number}`);
-          console.log(`📝 Conteúdo: ${finalMessage.substring(0, 100)}${finalMessage.length > 100 ? '...' : ''}`);
+          console.log(` Mensagem enviada para ${number}`);
+          console.log(`Conteúdo: ${finalMessage.substring(0, 100)}${finalMessage.length > 100 ? '...' : ''}`);
           return { success: true, messageId: message.id };
         } else {
           throw new Error('Mensagem não foi enviada corretamente');
         }
       } catch (sendError) {
         retryCount++;
-        console.log(`⚠️ Tentativa ${retryCount} falhou para ${number}: ${sendError.message}`);
+        console.log(` Tentativa ${retryCount} falhou para ${number}: ${sendError.message}`);
         
         if (retryCount >= maxRetries) {
-          console.error(`❌ Todas as tentativas falharam para ${number}`);
+          console.error(` Todas as tentativas falharam para ${number}`);
           return { success: false, reason: sendError.message };
         }
         
@@ -413,7 +413,7 @@ async function sendOne(client, number, messageData) {
     }
     
   } catch (err) {
-    console.error(`❌ Erro ao enviar para ${number}:`, err.message);
+    console.error(` Erro ao enviar para ${number}:`, err.message);
     return { success: false, reason: err.message };
   }
 }
@@ -423,8 +423,8 @@ async function startQueueConsumer(client) {
   let connection, channel;
   
   try {
-    console.log('🔌 Conectando ao RabbitMQ...');
-    console.log(`📍 Host: ${rabbitConfig.hostname}:${rabbitConfig.port}`);
+    console.log(' Conectando ao RabbitMQ...');
+    console.log(` Host: ${rabbitConfig.hostname}:${rabbitConfig.port}`);
 
     connection = await amqp.connect(rabbitConfig);
     channel = await connection.createChannel();
@@ -432,17 +432,17 @@ async function startQueueConsumer(client) {
     const queue = process.env.RABBITMQ_QUEUE || 'sqs-send-Credentials';
     await channel.assertQueue(queue, { durable: true });
 
-    console.log(`🎧 Aguardando mensagens na fila: ${queue}...`);
+    console.log(` Aguardando mensagens na fila: ${queue}...`);
 
     channel.consume(queue, async (msg) => {
       if (msg !== null) {
         try {
           const payload = JSON.parse(msg.content.toString());
-          console.log('📦 Mensagem recebida da fila:', payload);
+          console.log(' Mensagem recebida da fila:', payload);
 
           // Validação do payload
           if (!payload.phone && !payload.Phone) {
-            console.error('❌ Payload inválido: número não encontrado', payload);
+            console.error(' Payload inválido: número não encontrado', payload);
             channel.nack(msg, false, false);
             return;
           }
@@ -459,16 +459,16 @@ async function startQueueConsumer(client) {
           
           if (result.success) {
           channel.ack(msg);
-            console.log(`✅ Mensagem processada com sucesso para ${phone}`);
+            console.log(` Mensagem processada com sucesso para ${phone}`);
           } else if (result.reason === 'waiting_validation') {
             // Não fazer ack nem nack - aguardar validação
-            console.log(`⏳ Mensagem para ${phone} aguardando validação`);
+            console.log(` Mensagem para ${phone} aguardando validação`);
           } else {
-            console.log(`⚠️ Falha no envio para ${phone}: ${result.reason}`);
+            console.log(` Falha no envio para ${phone}: ${result.reason}`);
             channel.nack(msg, false, false);
           }
         } catch (error) {
-          console.error('❌ Erro ao processar mensagem:', error.message);
+          console.error(' Erro ao processar mensagem:', error.message);
           channel.nack(msg, false, false);
         }
       }
@@ -476,17 +476,17 @@ async function startQueueConsumer(client) {
 
     // Tratamento de desconexão
     connection.on('close', () => {
-      console.log('🔌 Conexão RabbitMQ fechada');
+      console.log(' Conexão RabbitMQ fechada');
       setTimeout(() => startQueueConsumer(client), 5000);
     });
 
     connection.on('error', (err) => {
-      console.error('❌ Erro na conexão RabbitMQ:', err.message);
+      console.error(' Erro na conexão RabbitMQ:', err.message);
     });
 
   } catch (err) {
-    console.error('❌ Erro ao conectar ao RabbitMQ:', err.message);
-    console.log('🔄 Tentando reconectar em 10 segundos...');
+    console.error(' Erro ao conectar ao RabbitMQ:', err.message);
+    console.log(' Tentando reconectar em 10 segundos...');
     setTimeout(() => startQueueConsumer(client), 10000);
   }
 }
@@ -495,12 +495,12 @@ async function startQueueConsumer(client) {
 process.on('SIGINT', async () => {
   clearQRCodeTimer();
   clearValidationTimer();
-  console.log('\n🛑 Recebido SIGINT, encerrando...');
+  console.log('\n Recebido SIGINT, encerrando...');
   try {
     await client.destroy();
-    console.log('✅ Cliente WhatsApp encerrado');
+    console.log(' Cliente WhatsApp encerrado');
   } catch (error) {
-    console.error('❌ Erro ao encerrar cliente:', error.message);
+    console.error('Erro ao encerrar cliente:', error.message);
   }
   process.exit(0);
 });
@@ -508,12 +508,12 @@ process.on('SIGINT', async () => {
 process.on('SIGTERM', async () => {
   clearQRCodeTimer();
   clearValidationTimer();
-  console.log('\n🛑 Recebido SIGTERM, encerrando...');
+  console.log('\n Recebido SIGTERM, encerrando...');
   try {
     await client.destroy();
-    console.log('✅ Cliente WhatsApp encerrado');
+    console.log(' Cliente WhatsApp encerrado');
   } catch (error) {
-    console.error('❌ Erro ao encerrar cliente:', error.message);
+    console.error(' Erro ao encerrar cliente:', error.message);
   }
   process.exit(0);
 });
@@ -524,9 +524,9 @@ console.log(`📁 Sessão: ${sessionPath}`);
 
 // Verificar se já existe uma sessão conectada
 if (checkExistingSession()) {
-  console.log('📱 Sessão existente encontrada, tentando reconectar...');
+  console.log(' Sessão existente encontrada, tentando reconectar...');
 } else {
-  console.log('📱 Nenhuma sessão encontrada, será necessário escanear QR Code');
+  console.log(' Nenhuma sessão encontrada, será necessário escanear QR Code');
 }
 
 showConnectionStatus();
